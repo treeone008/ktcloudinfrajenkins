@@ -1,17 +1,21 @@
 pipeline {
   agent any
-  stages {
-    stage('git scm update') {
-      steps {
-        git url: 'https://github.com/treeone008/ktcloudinfrajenkins.git', branch: 'main'
-      }
+    stages {
+        stage('Build and Push Image') {
+            steps {
+                sh '''
+                    docker build -t treeone008/ktcloudinfra4:0727 .
+                    docker push treeone008/ktcloudinfra4:0727
+                '''
+            }
+        }
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                    ansible master -m copy -a "src=deploy.yml dest=/root/deploy.yml"
+                    ansible master -m shell -a "kubectl apply -f /root/deploy.yml --kubeconfig=/etc/kubernetes/admin.conf"
+                '''
+            }
+        }
     }
-    stage('delivery and deployment using k8s') {
-      steps {
-        sh '''
-        ansible master -m shell -a "kubectl --kubeconfig=/etc/kubernetes/admin.conf get no"
-        '''
-      }
-    }
-  }
 }
